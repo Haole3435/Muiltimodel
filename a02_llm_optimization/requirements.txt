@@ -1,0 +1,69 @@
+# Core dependencies for A02 LLM Optimization
+torch>=2.1.0
+torchvision>=0.16.0
+torchaudio>=2.1.0
+
+# Unsloth and fine-tuning
+unsloth[colab-new] @ git+https://github.com/unslothai/unsloth.git
+transformers>=4.36.0
+datasets>=2.14.0
+accelerate>=0.24.0
+peft>=0.6.0
+trl>=0.7.0
+bitsandbytes>=0.41.0
+
+# llama.cpp integration
+llama-cpp-python[server]>=0.2.0
+
+# Web framework and API
+fastapi>=0.104.0
+uvicorn[standard]>=0.24.0
+pydantic>=2.4.0
+httpx>=0.25.0
+
+# Data processing
+numpy>=1.24.0
+pandas>=2.0.0
+scipy>=1.11.0
+
+# Configuration and utilities
+pyyaml>=6.0
+python-dotenv>=1.0.0
+click>=8.1.0
+tqdm>=4.66.0
+
+# Monitoring and logging
+prometheus-client>=0.18.0
+psutil>=5.9.0
+gputil>=1.4.0
+
+# Development and testing
+pytest>=7.4.0
+pytest-asyncio>=0.21.0
+black>=23.9.0
+isort>=5.12.0
+flake8>=6.1.0
+mypy>=1.6.0
+
+# Optional: for advanced features
+# xformers>=0.0.22  # Memory efficient attention
+# flash-attn>=2.3.0  # Flash attention (requires compilation)
+# triton>=2.1.0  # Triton kernels
+
+# System monitoring
+nvidia-ml-py>=12.535.0
+
+# Jupyter for development
+jupyter>=1.0.0
+ipywidgets>=8.1.0
+
+# MLflow for experiment tracking (optional)
+mlflow>=2.7.0
+
+# Weights & Biases for experiment tracking (optional)
+wandb>=0.15.0
+
+# Additional utilities
+rich>=13.6.0  # Better terminal output
+typer>=0.9.0  # CLI framework
+

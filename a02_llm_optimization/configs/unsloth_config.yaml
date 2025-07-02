@@ -1,0 +1,103 @@
+# Unsloth Fine-tuning Configuration for A02
+# Optimized for 4GB VRAM + Core i5 CPU
+
+model:
+  name: "unsloth/DeepSeek-R1-Distill-Llama-8B"
+  max_seq_length: 2048
+  load_in_4bit: true
+  load_in_8bit: false
+
+lora:
+  r: 16
+  alpha: 16
+  dropout: 0.0
+  bias: "none"
+  use_gradient_checkpointing: "unsloth"
+  random_state: 3407
+  use_rslora: false
+  target_modules:
+    - "q_proj"
+    - "k_proj" 
+    - "v_proj"
+    - "o_proj"
+    - "gate_proj"
+    - "up_proj"
+    - "down_proj"
+
+training:
+  per_device_train_batch_size: 2
+  gradient_accumulation_steps: 4
+  warmup_steps: 5
+  max_steps: 60
+  learning_rate: 2e-4
+  fp16: false  # Will be auto-detected
+  bf16: true   # Will be auto-detected
+  logging_steps: 1
+  optim: "adamw_8bit"
+  weight_decay: 0.01
+  lr_scheduler_type: "linear"
+  seed: 3407
+  dataloader_num_workers: 0
+  gradient_checkpointing: true
+
+grpo:
+  enabled: true
+  beta: 0.1
+  gamma: 0.99
+  group_size: 4
+  temperature: 1.0
+
+memory:
+  max_memory_usage: 0.8  # 80% of available memory
+  enable_monitoring: true
+
+output:
+  dir: "./results"
+  save_steps: 20
+  save_total_limit: 2
+
+export:
+  gguf_quantization: "q4_k_m"  # Options: q4_k_m, q5_k_m, q8_0, f16, f32
+  export_to_gguf: true
+  export_to_ollama: true
+
+inference:
+  test_prompt: "What is artificial intelligence?"
+  max_new_tokens: 128
+  temperature: 0.7
+  do_sample: true
+
+# Hardware-specific optimizations for 4GB VRAM + Core i5
+hardware:
+  gpu_memory_gb: 4
+  cpu_cores: 4
+  ram_gb: 8
+  
+  # Optimizations
+  reduce_batch_size_on_oom: true
+  enable_cpu_offload: true
+  use_flash_attention: true
+  optimize_for_inference: true
+
+# Dataset configuration
+dataset:
+  format: "json"  # json, huggingface, csv
+  text_field: "text"
+  chat_template: "chatml"  # chatml, llama-3, mistral
+  max_length: 2048
+  packing: false  # Can make training 5x faster for short sequences
+
+# Monitoring and logging
+monitoring:
+  enable_wandb: false
+  enable_tensorboard: false
+  log_level: "INFO"
+  save_logs: true
+  
+# Performance targets for 4GB VRAM setup
+performance_targets:
+  max_memory_usage_gb: 3.5
+  target_training_time_per_step: 5.0  # seconds
+  target_inference_latency: 0.1  # seconds
+  min_throughput_tokens_per_second: 50
+

@@ -1,104 +1,147 @@
-# Multi-stage build for A02 LLM Optimization
-FROM nvidia/cuda:12.1-devel-ubuntu22.04 as base
+# Multi-stage build for A02 LLM Optimization with Unsloth + llama.cpp
+# Optimized for 4GB VRAM + Core i5 CPU
+
+# Stage 1: Build environment
+FROM nvidia/cuda:12.1-devel-ubuntu22.04 as builder
 
 # Set environment variables
 ENV DEBIAN_FRONTEND=noninteractive
 ENV PYTHONUNBUFFERED=1
-ENV CUDA_HOME=/usr/local/cuda
-ENV PATH=${CUDA_HOME}/bin:${PATH}
-ENV LD_LIBRARY_PATH=${CUDA_HOME}/lib64:${LD_LIBRARY_PATH}
+ENV CUDA_DOCKER_ARCH=all
+ENV LLAMA_CUBLAS=1
 
 # Install system dependencies
 RUN apt-get update && apt-get install -y \
-    python3.11 \
-    python3.11-dev \
+    python3 \
     python3-pip \
+    python3-dev \
     git \
-    curl \
     wget \
+    curl \
     build-essential \
     cmake \
     ninja-build \
-    libssl-dev \
-    libffi-dev \
-    libbz2-dev \
-    libreadline-dev \
-    libsqlite3-dev \
-    libncurses5-dev \
-    libncursesw5-dev \
-    xz-utils \
-    tk-dev \
-    libxml2-dev \
-    libxmlsec1-dev \
-    libffi-dev \
-    liblzma-dev \
+    pkg-config \
+    libopenblas-dev \
+    liblapack-dev \
+    ccache \
     && rm -rf /var/lib/apt/lists/*
 
-# Create symbolic link for python
-RUN ln -sf /usr/bin/python3.11 /usr/bin/python
-
-# Upgrade pip
-RUN python -m pip install --upgrade pip setuptools wheel
+# Install Python dependencies
+RUN pip3 install --no-cache-dir --upgrade pip setuptools wheel
 
 # Install PyTorch with CUDA support
-RUN pip install torch==2.1.0+cu121 torchvision==0.16.0+cu121 torchaudio==0.16.0+cu121 \
+RUN pip3 install --no-cache-dir torch==2.1.0+cu121 torchvision==0.16.0+cu121 torchaudio==2.1.0+cu121 \
     --index-url https://download.pytorch.org/whl/cu121
 
-# Install Triton and related packages
-RUN pip install triton==2.1.0
+# Install Unsloth
+RUN pip3 install --no-cache-dir "unsloth[colab-new] @ git+https://github.com/unslothai/unsloth.git"
 
-# Install Liger Kernel
-RUN pip install liger-kernel
+# Install additional ML libraries
+RUN pip3 install --no-cache-dir \
+    transformers>=4.36.0 \
+    datasets \
+    accelerate \
+    peft \
+    trl \
+    bitsandbytes \
+    xformers \
+    flash-attn --no-build-isolation
 
-# Set working directory
+# Build llama.cpp with CUDA support
+WORKDIR /tmp
+RUN git clone https://github.com/ggerganov/llama.cpp.git && \
+    cd llama.cpp && \
+    mkdir build && \
+    cd build && \
+    cmake .. -DLLAMA_CUBLAS=ON -DCMAKE_BUILD_TYPE=Release && \
+    cmake --build . --config Release -j$(nproc) && \
+    cp bin/* /usr/local/bin/ && \
+    cd / && rm -rf /tmp/llama.cpp
+
+# Install llama-cpp-python with CUDA support
+ENV CMAKE_ARGS="-DLLAMA_CUBLAS=on"
+ENV FORCE_CMAKE=1
+RUN pip3 install --no-cache-dir llama-cpp-python[server]
+
+# Stage 2: Runtime environment
+FROM nvidia/cuda:12.1-runtime-ubuntu22.04
+
+# Set environment variables
+ENV DEBIAN_FRONTEND=noninteractive
+ENV PYTHONUNBUFFERED=1
+ENV CUDA_VISIBLE_DEVICES=0
+
+# Install runtime dependencies
+RUN apt-get update && apt-get install -y \
+    python3 \
+    python3-pip \
+    libopenblas0 \
+    libgomp1 \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy Python packages from builder
+COPY --from=builder /usr/local/lib/python3.10/dist-packages /usr/local/lib/python3.10/dist-packages
+COPY --from=builder /usr/local/bin /usr/local/bin
+
+# Install additional runtime dependencies
+RUN pip3 install --no-cache-dir \
+    fastapi \
+    uvicorn[standard] \
+    pydantic \
+    pyyaml \
+    psutil \
+    gputil \
+    prometheus-client \
+    httpx
+
+# Create app directory
 WORKDIR /app
 
-# Copy requirements first for better caching
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
-
-# Copy source code
+# Copy application code
 COPY src/ ./src/
 COPY configs/ ./configs/
-COPY kernels/ ./kernels/
-COPY models/ ./models/
+COPY scripts/ ./scripts/
+COPY requirements.txt ./
 
 # Create necessary directories
-RUN mkdir -p /app/logs /app/cache /app/tmp
+RUN mkdir -p models data results logs
 
-# Set up model directory
-RUN mkdir -p /models && chmod 755 /models
-
-# Install additional optimizations
-RUN pip install flash-attn --no-build-isolation
-
-# Compile custom kernels
-WORKDIR /app/kernels
-RUN python setup.py build_ext --inplace
-
-WORKDIR /app
+# Set permissions
+RUN chmod +x scripts/*.py
 
 # Create non-root user for security
 RUN useradd -m -u 1000 appuser && \
-    chown -R appuser:appuser /app && \
-    chown -R appuser:appuser /models
-
-# Switch to non-root user
+    chown -R appuser:appuser /app
 USER appuser
 
-# Expose port
-EXPOSE 8000
-
 # Health check
-HEALTHCHECK --interval=30s --timeout=30s --start-period=60s --retries=3 \
+HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
     CMD curl -f http://localhost:8000/health || exit 1
 
-# Set environment variables for optimization
-ENV TORCH_CUDA_ARCH_LIST="7.0;7.5;8.0;8.6;8.9;9.0"
-ENV CUDA_LAUNCH_BLOCKING=0
-ENV TORCH_USE_CUDA_DSA=1
-ENV PYTORCH_CUDA_ALLOC_CONF=max_split_size_mb:128
+# Expose ports
+EXPOSE 8000
 
-# Start command
-CMD ["python", "src/main.py"]
+# Default command
+CMD ["python3", "scripts/serve.py", "--host", "0.0.0.0", "--port", "8000"]
+
+# Build arguments for customization
+ARG MODEL_PATH=""
+ARG GPU_LAYERS=20
+ARG CTX_SIZE=2048
+ARG BATCH_SIZE=512
+
+# Environment variables for runtime configuration
+ENV MODEL_PATH=${MODEL_PATH}
+ENV GPU_LAYERS=${GPU_LAYERS}
+ENV CTX_SIZE=${CTX_SIZE}
+ENV BATCH_SIZE=${BATCH_SIZE}
+
+# Labels
+LABEL maintainer="A02 LLM Optimization Team"
+LABEL description="Unsloth + llama.cpp optimized LLM serving container"
+LABEL version="1.0.0"
+LABEL gpu.required="true"
+LABEL gpu.memory="4GB+"
 

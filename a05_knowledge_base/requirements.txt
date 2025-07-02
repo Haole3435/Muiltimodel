@@ -1,0 +1,98 @@
+# Core dependencies for A05 Knowledge Base
+crawl4ai>=0.3.0
+scrapy>=2.11.0
+playwright>=1.40.0
+
+# LangChain and LangGraph
+langchain>=0.1.0
+langchain-community>=0.0.10
+langchain-openai>=0.0.5
+langchain-google-genai>=0.0.5
+langgraph>=0.0.20
+
+# Vector databases
+chromadb>=0.4.0
+pinecone-client>=3.0.0
+qdrant-client>=1.7.0
+weaviate-client>=3.25.0
+
+# Triton client for inference
+tritonclient[all]>=2.40.0
+
+# MCP and A2A protocols
+mcp-client>=0.1.0
+a2a-protocol>=0.1.0
+
+# Web framework and API
+fastapi>=0.104.0
+uvicorn[standard]>=0.24.0
+pydantic>=2.4.0
+httpx>=0.25.0
+
+# Data processing
+numpy>=1.24.0
+pandas>=2.0.0
+scipy>=1.11.0
+beautifulsoup4>=4.12.0
+lxml>=4.9.0
+html2text>=2020.1.16
+
+# Text processing and embeddings
+sentence-transformers>=2.2.0
+transformers>=4.36.0
+torch>=2.1.0
+tiktoken>=0.5.0
+
+# Document processing
+pypdf>=3.17.0
+python-docx>=1.1.0
+python-pptx>=0.6.0
+openpyxl>=3.1.0
+markdown>=3.5.0
+
+# Configuration and utilities
+pyyaml>=6.0
+python-dotenv>=1.0.0
+click>=8.1.0
+tqdm>=4.66.0
+rich>=13.6.0
+
+# Monitoring and logging
+prometheus-client>=0.18.0
+psutil>=5.9.0
+
+# Async and concurrency
+aiohttp>=3.9.0
+asyncio-throttle>=1.0.0
+aiofiles>=23.2.0
+
+# Caching and storage
+redis>=5.0.0
+sqlalchemy>=2.0.0
+alembic>=1.12.0
+
+# Development and testing
+pytest>=7.4.0
+pytest-asyncio>=0.21.0
+pytest-mock>=3.12.0
+black>=23.9.0
+isort>=5.12.0
+flake8>=6.1.0
+mypy>=1.6.0
+
+# Optional: for advanced features
+# faiss-cpu>=1.7.4  # Facebook AI Similarity Search
+# elasticsearch>=8.11.0  # Elasticsearch client
+# neo4j>=5.14.0  # Neo4j graph database
+
+# MLflow for experiment tracking
+mlflow>=2.7.0
+
+# Jupyter for development
+jupyter>=1.0.0
+ipywidgets>=8.1.0
+
+# Additional utilities
+typer>=0.9.0  # CLI framework
+jinja2>=3.1.0  # Template engine
+

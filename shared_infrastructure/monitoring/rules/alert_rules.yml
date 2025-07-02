@@ -1,0 +1,154 @@
+
+groups:
+- name: general.rules
+  rules:
+  - alert: InstanceDown
+    expr: up == 0
+    for: 5m
+    labels:
+      severity: critical
+    annotations:
+      summary: "Instance {{ $labels.instance }} down"
+      description: "{{ $labels.instance }} of job {{ $labels.job }} has been down for more than 5 minutes."
+
+- name: triton.rules
+  rules:
+  - alert: HighTritonInferenceLatency
+    expr: histogram_quantile(0.95, rate(triton_inference_request_duration_ms_bucket[5m])) > 100
+    for: 2m
+    labels:
+      severity: warning
+    annotations:
+      summary: "High Triton inference latency (instance {{ $labels.instance }})"
+      description: "Triton inference P95 latency is above 100ms for more than 2 minutes on instance {{ $labels.instance }}."
+
+  - alert: TritonServerDown
+    expr: up{job="triton-inference-server"} == 0
+    for: 5m
+    labels:
+      severity: critical
+    annotations:
+      summary: "Triton Inference Server down (instance {{ $labels.instance }})"
+      description: "Triton Inference Server instance {{ $labels.instance }} has been down for more than 5 minutes."
+
+- name: a02.rules
+  rules:
+  - alert: A02ServiceHighErrorRate
+    expr: sum(rate(http_requests_total{service="a02", status_code=~"5.."}[5m])) / sum(rate(http_requests_total{service="a02"}[5m])) > 0.05
+    for: 5m
+    labels:
+      severity: critical
+    annotations:
+      summary: "A02 LLM Service high error rate"
+      description: "A02 LLM Service has an error rate above 5% for more than 5 minutes."
+
+  - alert: A02ServiceHighLatency
+    expr: histogram_quantile(0.95, rate(http_request_duration_seconds_bucket{service="a02"}[5m])) > 0.5
+    for: 2m
+    labels:
+      severity: warning
+    annotations:
+      summary: "A02 LLM Service high latency"
+      description: "A02 LLM Service P95 latency is above 500ms for more than 2 minutes."
+
+- name: a05.rules
+  rules:
+  - alert: A05ServiceHighErrorRate
+    expr: sum(rate(http_requests_total{service="a05", status_code=~"5.."}[5m])) / sum(rate(http_requests_total{service="a05"}[5m])) > 0.05
+    for: 5m
+    labels:
+      severity: critical
+    annotations:
+      summary: "A05 Knowledge Base Service high error rate"
+      description: "A05 Knowledge Base Service has an error rate above 5% for more than 5 minutes."
+
+  - alert: A05ServiceHighLatency
+    expr: histogram_quantile(0.95, rate(http_request_duration_seconds_bucket{service="a05"}[5m])) > 0.2
+    for: 2m
+    labels:
+      severity: warning
+    annotations:
+      summary: "A05 Knowledge Base Service high latency"
+      description: "A05 Knowledge Base Service P95 latency is above 200ms for more than 2 minutes."
+
+- name: redis.rules
+  rules:
+  - alert: RedisDown
+    expr: redis_up == 0
+    for: 5m
+    labels:
+      severity: critical
+    annotations:
+      summary: "Redis instance down (instance {{ $labels.instance }})"
+      description: "Redis instance {{ $labels.instance }} has been down for more than 5 minutes."
+
+  - alert: RedisHighMemoryUsage
+    expr: redis_memory_used_bytes / redis_memory_max_bytes > 0.8
+    for: 5m
+    labels:
+      severity: warning
+    annotations:
+      summary: "Redis high memory usage (instance {{ $labels.instance }})"
+      description: "Redis instance {{ $labels.instance }} is using more than 80% of its allocated memory."
+
+- name: postgres.rules
+  rules:
+  - alert: PostgresDown
+    expr: pg_up == 0
+    for: 5m
+    labels:
+      severity: critical
+    annotations:
+      summary: "PostgreSQL instance down (instance {{ $labels.instance }})"
+      description: "PostgreSQL instance {{ $labels.instance }} has been down for more than 5 minutes."
+
+  - alert: PostgresHighConnections
+    expr: pg_stat_activity_count > 100
+    for: 5m
+    labels:
+      severity: warning
+    annotations:
+      summary: "PostgreSQL high connection count (instance {{ $labels.instance }})"
+      description: "PostgreSQL instance {{ $labels.instance }} has more than 100 active connections."
+
+- name: kubernetes.rules
+  rules:
+  - alert: KubePodCrashLooping
+    expr: sum(increase(kube_pod_container_status_restarts_total[5m])) by (namespace, pod, container) > 0
+    for: 5m
+    labels:
+      severity: critical
+    annotations:
+      summary: "Pod {{ $labels.pod }} in namespace {{ $labels.namespace }} is crashlooping"
+      description: "Pod {{ $labels.pod }} in namespace {{ $labels.namespace }} has restarted multiple times."
+
+  - alert: KubeDeploymentReplicasMismatch
+    expr: kube_deployment_spec_replicas != kube_deployment_status_replicas
+    for: 15m
+    labels:
+      severity: warning
+    annotations:
+      summary: "Deployment {{ $labels.deployment }} in namespace {{ $labels.namespace }} has replica mismatch"
+      description: "Deployment {{ $labels.deployment }} in namespace {{ $labels.namespace }} has a mismatch between desired and current replicas."
+
+- name: gpu.rules
+  rules:
+  - alert: HighGPUMemoryUsage
+    expr: nvidia_gpu_memory_used_bytes / nvidia_gpu_memory_total_bytes > 0.9
+    for: 1m
+    labels:
+      severity: critical
+    annotations:
+      summary: "GPU memory usage too high on {{ $labels.instance }}"
+      description: "GPU memory usage on {{ $labels.instance }} is above 90%."
+
+  - alert: HighGPUUtilization
+    expr: nvidia_gpu_utilization_gpu_percent > 90
+    for: 5m
+    labels:
+      severity: warning
+    annotations:
+      summary: "GPU utilization too high on {{ $labels.instance }}"
+      description: "GPU utilization on {{ $labels.instance }} is above 90% for more than 5 minutes."
+
+
