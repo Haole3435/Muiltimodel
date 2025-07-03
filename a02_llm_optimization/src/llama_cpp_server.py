@@ -290,13 +290,13 @@ class LlamaCppServer:
         
         for message in messages:
             if message.role == "system":
-                prompt += f"System: {message.content}\n"
+                prompt += f"<|im_start|>system\n{message.content}<|im_end|>\n"
             elif message.role == "user":
-                prompt += f"User: {message.content}\n"
+                prompt += f"<|im_start|>user\n{message.content}<|im_end|>\n"
             elif message.role == "assistant":
-                prompt += f"Assistant: {message.content}\n"
+                prompt += f"<|im_start|>assistant\n{message.content}<|im_end|>\n"
         
-        prompt += "Assistant: "
+        prompt += "<|im_start|>assistant\n"
         return prompt
     
     async def _handle_chat_completion(self, request: ChatCompletionRequest) -> Union[ChatCompletionResponse, StreamingResponse]:

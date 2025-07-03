@@ -1,8 +1,12 @@
-# Unsloth Fine-tuning Configuration for A02
+# Unsloth Fine-tuning Configuration for A02 (Vietnamese)
 # Optimized for 4GB VRAM + Core i5 CPU
 
 model:
-  name: "unsloth/DeepSeek-R1-Distill-Llama-8B"
+  # Using a Llama-2 based model for better Vietnamese support if available
+  # If a specific Vietnamese Llama-2 model is not found, DeepSeek R1 will be fine-tuned on Vietnamese data.
+  name: "unsloth/llama-2-7b-bnb-4bit" # Consider using a Llama-2 base model for better Vietnamese fine-tuning
+  # Alternatively, if a specific Vietnamese Llama-2 model is available on Hugging Face, use it:
+  # name: "Vietnamese-LLaMA-2-7B" # Placeholder, replace with actual model name if found
   max_seq_length: 2048
   load_in_4bit: true
   load_in_8bit: false
@@ -62,7 +66,7 @@ export:
   export_to_ollama: true
 
 inference:
-  test_prompt: "What is artificial intelligence?"
+  test_prompt: "Trí tuệ nhân tạo là gì?"
   max_new_tokens: 128
   temperature: 0.7
   do_sample: true

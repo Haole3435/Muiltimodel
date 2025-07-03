@@ -91,7 +91,7 @@ def create_unsloth_config(yaml_config: Dict[str, Any]) -> UnslothConfig:
         save_total_limit=output_config.get('save_total_limit', 2),
     )
 
-def prepare_dataset(dataset_path: str, dataset_config: Dict[str, Any]) -> str:
+def prepare_dataset(dataset_path: str, dataset_config: Dict[str, Any], tokenizer) -> str:
     """Prepare dataset for training"""
     
     if not os.path.exists(dataset_path):
@@ -100,7 +100,7 @@ def prepare_dataset(dataset_path: str, dataset_config: Dict[str, Any]) -> str:
         
         # Create sample dataset
         sample_path = os.path.join(os.path.dirname(dataset_path), "sample_dataset.json")
-        create_sample_dataset(sample_path)
+        create_sample_dataset(sample_path, tokenizer)
         return sample_path
     
     return dataset_path
@@ -174,9 +174,8 @@ def main():
             unsloth_config.use_grpo = False
         
         # Prepare dataset
-        dataset_config = yaml_config.get('dataset', {})
-        dataset_path = prepare_dataset(args.dataset, dataset_config)
-        
+        dataset_config = yaml_config.get("dataset", {})
+        dataset_path = prepare_dataset(args.dataset, dataset_config, fine_tuner.tokenizer)        
         logger.info("Starting A02 LLM Fine-tuning...")
         logger.info(f"Model: {unsloth_config.model_name}")
         logger.info(f"Dataset: {dataset_path}")

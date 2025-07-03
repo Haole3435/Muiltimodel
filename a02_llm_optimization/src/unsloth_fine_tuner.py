@@ -500,7 +500,7 @@ class UnslothFineTuner:
                 tokenize=True,
                 add_generation_prompt=True,
                 return_tensors="pt"
-            ).to("cuda" if torch.cuda.is_available() else "cpu")
+            ).to(model.device)
             
             # Generate response
             text_streamer = TextStreamer(tokenizer, skip_prompt=True)
@@ -519,8 +519,7 @@ class UnslothFineTuner:
             response = tokenizer.decode(
                 outputs[0][len(inputs[0]):], 
                 skip_special_tokens=True
-            )
-            
+            )            
             logger.info(f"Generated response: {response}")
             return response
             
@@ -529,31 +528,29 @@ class UnslothFineTuner:
             return None
 
 # Example usage and testing
-def create_sample_dataset(output_path: str):
+def create_sample_dataset(output_path: str, tokenizer):
     """Create a sample dataset for testing"""
-    sample_data = [
-        {
-            "conversations": [
-                {"role": "user", "content": "What is machine learning?"},
-                {"role": "assistant", "content": "Machine learning is a subset of artificial intelligence that enables computers to learn and improve from experience without being explicitly programmed."}
-            ]
-        },
-        {
-            "conversations": [
-                {"role": "user", "content": "Explain deep learning."},
-                {"role": "assistant", "content": "Deep learning is a machine learning technique that uses neural networks with multiple layers to model and understand complex patterns in data."}
-            ]
-        },
-        {
-            "conversations": [
-                {"role": "user", "content": "What is the difference between AI and ML?"},
-                {"role": "assistant", "content": "AI is the broader concept of machines being able to carry out tasks in a smart way, while ML is a specific application of AI that focuses on the idea that machines can learn from data."}
-            ]
-        }
+    sample_conversations = [
+        [
+            {"role": "user", "content": "Trí tuệ nhân tạo là gì?"},
+            {"role": "assistant", "content": "Trí tuệ nhân tạo (AI) là một lĩnh vực của khoa học máy tính tập trung vào việc tạo ra các hệ thống có khả năng thực hiện các nhiệm vụ đòi hỏi trí thông minh của con người."}
+        ],
+        [
+            {"role": "user", "content": "Giải thích học sâu."},
+            {"role": "assistant", "content": "Học sâu là một nhánh của học máy sử dụng mạng nơ-ron nhân tạo với nhiều lớp để mô hình hóa và hiểu các mẫu phức tạp trong dữ liệu."}
+        ],
+        [
+            {"role": "user", "content": "Sự khác biệt giữa AI và ML là gì?"},
+            {"role": "assistant", "content": "AI là khái niệm rộng hơn về khả năng của máy móc thực hiện các nhiệm vụ một cách thông minh, trong khi ML là một ứng dụng cụ thể của AI tập trung vào việc máy móc có thể học từ dữ liệu."}
+        ]
     ]
+
+    formatted_data = []
+    for convo in sample_conversations:
+        formatted_data.append({"conversations": convo})
     
     with open(output_path, 'w', encoding='utf-8') as f:
-        json.dump(sample_data, f, indent=2, ensure_ascii=False)
+        json.dump(formatted_data, f, indent=2, ensure_ascii=False)
     
     print(f"Sample dataset created: {output_path}")
 
@@ -562,8 +559,7 @@ def main():
     
     # Create sample dataset
     dataset_path = "./sample_dataset.json"
-    create_sample_dataset(dataset_path)
-    
+    create_sample_dataset(dataset_path, fine_tuner.tokenizer)    
     # Configuration for 4GB VRAM + Core i5
     config = UnslothConfig(
         model_name="unsloth/DeepSeek-R1-Distill-Llama-8B",
